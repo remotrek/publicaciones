@@ -24,5 +24,7 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-          TWITTER_USER_ACCESS_TOKEN: ${{ secrets.IMITTER_USER_ACCESS_TOKEN }}  # Using your existing secret
+          TWITTER_USER_ACCESS_TOKEN: ${{ secrets.IMITTER_USER_ACCESS_TOKEN }}  # Using your v1.1 token
+          # OR if you want to use OAuth 2.0:
+          TWITTER_BEARER_TOKEN: ${{ secrets.IMITTER_BEARER_TOKEN }}
         run: python jobs/fetch_jobs.py
