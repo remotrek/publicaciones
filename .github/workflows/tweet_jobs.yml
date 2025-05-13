@@ -1,7 +1,7 @@
 name: Tweet New Jobs
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Cada 6 horas (formato cron)
+    - cron: '0 12 * * *'  # Cada 6 horas (formato cron)
   workflow_dispatch:        # Permite ejecución manual
 
 jobs:
