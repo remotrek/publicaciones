@@ -1,7 +1,18 @@
 import os
 import tweepy
 from firebase_admin import credentials, firestore, initialize_app
+import os
 
+# Verifica que todas las variables existan
+required_vars = [
+    'FIREBASE_PROJECT_ID',
+    'FIREBASE_PRIVATE_KEY',
+    'FIREBASE_CLIENT_EMAIL'
+]
+
+for var in required_vars:
+    if os.getenv(var) is None:
+        raise ValueError(f"❌ Falta la variable de entorno: {var}")
 # Configura Firebase (usa variables de entorno)
 cred = credentials.Certificate({
     "type": "service_account",
