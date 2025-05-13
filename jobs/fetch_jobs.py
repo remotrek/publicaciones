@@ -82,3 +82,4 @@ def fetch_and_tweet():
 
 if __name__ == "__main__":
     fetch_and_tweet()
+
