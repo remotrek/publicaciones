@@ -2,19 +2,19 @@ import os
 import requests
 from firebase_admin import credentials, firestore, initialize_app
 
-# Verificación de variables
+# Verificar variables de entorno
 required_vars = [
     'FIREBASE_PROJECT_ID',
     'FIREBASE_PRIVATE_KEY',
     'FIREBASE_CLIENT_EMAIL',
-    'TWITTER_BEARER_TOKEN'
+    'TWITTER_ACCESS_TOKEN'
 ]
 
 missing_vars = [var for var in required_vars if os.getenv(var) is None]
 if missing_vars:
     raise ValueError(f"❌ Faltan variables de entorno: {', '.join(missing_vars)}")
 
-# Configura Firebase
+# Configurar Firebase
 try:
     cred = credentials.Certificate({
         "type": "service_account",
@@ -34,13 +34,10 @@ except Exception as e:
     print(f"🔥 Error configurando Firebase: {str(e)}")
     raise
 
-# Configura Twitter API v2
-BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
-if not BEARER_TOKEN:
-    raise ValueError("❌ Falta TWITTER_BEARER_TOKEN")
-
+# Configuración Twitter API v2 OAuth 2.0 User Context
+ACCESS_TOKEN = os.getenv("TWITTER_USER_ACCESS_TOKEN")
 HEADERS = {
-    "Authorization": f"Bearer {BEARER_TOKEN}",
+    "Authorization": f"Bearer {ACCESS_TOKEN}",
     "Content-Type": "application/json"
 }
 
@@ -52,7 +49,7 @@ def post_tweet(text):
     if response.status_code != 201:
         print(f"❌ Error publicando tweet: {response.status_code} - {response.text}")
         raise Exception("Error al publicar tweet")
-    
+
     tweet_id = response.json()['data']['id']
     print(f"✅ Tweet publicado: https://twitter.com/user/status/{tweet_id}")
     return tweet_id
@@ -61,7 +58,7 @@ def fetch_and_tweet():
     try:
         jobs_ref = db.collection("jobs").where("published", "==", False).limit(10)
         jobs = [doc.to_dict() for doc in jobs_ref.stream()]
-        
+
         if not jobs:
             print("✅ No hay trabajos nuevos para publicar")
             return
