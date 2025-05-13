@@ -1,5 +1,5 @@
 import os
-import tweepy
+import requests
 from firebase_admin import credentials, firestore, initialize_app
 
 # Verificación de variables
@@ -7,10 +7,7 @@ required_vars = [
     'FIREBASE_PROJECT_ID',
     'FIREBASE_PRIVATE_KEY',
     'FIREBASE_CLIENT_EMAIL',
-    'TWITTER_API_KEY',
-    'TWITTER_API_SECRET',
-    'TWITTER_ACCESS_TOKEN',
-    'TWITTER_ACCESS_SECRET'
+    'TWITTER_BEARER_TOKEN'
 ]
 
 missing_vars = [var for var in required_vars if os.getenv(var) is None]
@@ -20,35 +17,45 @@ if missing_vars:
 # Configura Firebase
 try:
     cred = credentials.Certificate({
-    "type": "service_account",
-    "project_id": os.getenv("FIREBASE_PROJECT_ID"),
-    "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID", ""),  # Nuevo campo
-    "private_key": os.getenv("FIREBASE_PRIVATE_KEY").replace('\\n', '\n'),
-    "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
-    "client_id": os.getenv("FIREBASE_CLIENT_ID", ""),  # Nuevo campo
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_X509_CERT_URL", "")
-})
+        "type": "service_account",
+        "project_id": os.getenv("FIREBASE_PROJECT_ID"),
+        "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID", ""),
+        "private_key": os.getenv("FIREBASE_PRIVATE_KEY").replace('\\n', '\n'),
+        "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
+        "client_id": os.getenv("FIREBASE_CLIENT_ID", ""),
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_X509_CERT_URL", "")
+    })
     initialize_app(cred)
     db = firestore.client()
 except Exception as e:
     print(f"🔥 Error configurando Firebase: {str(e)}")
     raise
 
-# Configura Twitter
-try:
-    auth = tweepy.OAuth1UserHandler(
-        os.getenv("TWITTER_API_KEY"),
-        os.getenv("TWITTER_API_SECRET"),
-        os.getenv("TWITTER_ACCESS_TOKEN"),
-        os.getenv("TWITTER_ACCESS_SECRET")
-    )
-    api = tweepy.API(auth)
-except Exception as e:
-    print(f"🐦 Error configurando Twitter: {str(e)}")
-    raise
+# Configura Twitter API v2
+BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
+if not BEARER_TOKEN:
+    raise ValueError("❌ Falta TWITTER_BEARER_TOKEN")
+
+HEADERS = {
+    "Authorization": f"Bearer {BEARER_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+def post_tweet(text):
+    url = "https://api.twitter.com/2/tweets"
+    payload = {"text": text}
+    response = requests.post(url, headers=HEADERS, json=payload)
+
+    if response.status_code != 201:
+        print(f"❌ Error publicando tweet: {response.status_code} - {response.text}")
+        raise Exception("Error al publicar tweet")
+    
+    tweet_id = response.json()['data']['id']
+    print(f"✅ Tweet publicado: https://twitter.com/user/status/{tweet_id}")
+    return tweet_id
 
 def fetch_and_tweet():
     try:
@@ -64,15 +71,14 @@ def fetch_and_tweet():
             tweet_text += f"• {job.get('title', 'Sin título')} @ {job.get('company', 'Empresa no especificada')}\n"
             tweet_text += f"  💰 {job.get('salary', 'Salario confidencial')}\n"
             tweet_text += f"  🔗 {job.get('apply_url', 'https://remotrek.com/jobs')}\n\n"
-        
+
         tweet_text = tweet_text[:275] + "..." if len(tweet_text) > 280 else tweet_text
-        
-        tweet = api.update_status(tweet_text)
+
+        tweet_id = post_tweet(tweet_text)
+
         for job in jobs:
             db.collection("jobs").document(job['id']).update({"published": True})
-        
-        print(f"✅ Tweet publicado: https://twitter.com/user/status/{tweet.id}")
-    
+
     except Exception as e:
         print(f"❌ Error al publicar: {str(e)}")
         raise
