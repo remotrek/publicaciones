@@ -7,7 +7,7 @@ required_vars = [
     'FIREBASE_PROJECT_ID',
     'FIREBASE_PRIVATE_KEY',
     'FIREBASE_CLIENT_EMAIL',
-    'TWITTER_ACCESS_TOKEN'
+    'TWITTER_USER_ACCESS_TOKEN'
 ]
 
 missing_vars = [var for var in required_vars if os.getenv(var) is None]
