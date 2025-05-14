@@ -13,9 +13,10 @@ missing_vars = [var for var in required_firebase_vars if os.getenv(var) is None]
 if missing_vars:
     raise ValueError(f"❌ Variables de Firebase faltantes: {', '.join(missing_vars)}")
 
-# Configurar Firebase
+# Configurar Firebase (VERSIÓN CORREGIDA)
 try:
     cred = credentials.Certificate({
+        "type": "service_account",  # ESTE CAMPO ES REQUERIDO
         "project_id": os.getenv("FIREBASE_PROJECT_ID"),
         "private_key": os.getenv("FIREBASE_PRIVATE_KEY").replace('\\n', '\n'),
         "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
@@ -23,9 +24,12 @@ try:
     })
     initialize_app(cred)
     db = firestore.client()
+    print("✅ Firebase configurado correctamente")
 except Exception as e:
-    print(f"🔥 Error Firebase: {str(e)}")
+    print(f"🔥 Error configurando Firebase: {str(e)}")
     raise
+
+# [El resto del script permanece igual...]
 
 # 2. Twitter OAuth 2.0
 def post_tweet(text):
