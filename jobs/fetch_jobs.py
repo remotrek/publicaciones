@@ -13,10 +13,10 @@ missing_vars = [var for var in required_firebase_vars if os.getenv(var) is None]
 if missing_vars:
     raise ValueError(f"❌ Variables de Firebase faltantes: {', '.join(missing_vars)}")
 
-# Configurar Firebase (VERSIÓN CORREGIDA)
+# Configurar Firebase
 try:
     cred = credentials.Certificate({
-        "type": "service_account",  # ESTE CAMPO ES REQUERIDO
+        "type": "service_account",
         "project_id": os.getenv("FIREBASE_PROJECT_ID"),
         "private_key": os.getenv("FIREBASE_PRIVATE_KEY").replace('\\n', '\n'),
         "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
@@ -29,15 +29,14 @@ except Exception as e:
     print(f"🔥 Error configurando Firebase: {str(e)}")
     raise
 
-# [El resto del script permanece igual...]
-
 # 2. Twitter OAuth 2.0
 def post_tweet(text):
     """Publicar tweet usando OAuth 2.0"""
-    BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN") or os.getenv("IMITTER_BEARER_TOKEN")
+    # Usamos directamente IMITTER_BEARER_TOKEN que es el nombre en tus secrets
+    BEARER_TOKEN = os.getenv("IMITTER_BEARER_TOKEN")
     
     if not BEARER_TOKEN:
-        raise ValueError("❌ Falta TWITTER_BEARER_TOKEN en las variables de entorno")
+        raise ValueError("❌ Falta IMITTER_BEARER_TOKEN en las variables de entorno")
     
     url = "https://api.twitter.com/2/tweets"
     headers = {
@@ -61,12 +60,12 @@ def post_tweet(text):
         print(f"❌ Error inesperado: {str(e)}")
         raise
 
-# 3. Lógica principal
+# 3. Lógica principal (con query mejorada)
 def fetch_and_tweet():
     try:
-        # Obtener trabajos no publicados
-        jobs_ref = db.collection("jobs").where("published", "==", False).limit(3)  # Menos trabajos por tweet
-        jobs = [doc.to_dict() for doc in jobs_ref.stream()]
+        # Query mejorada para evitar el warning
+        jobs_query = db.collection("jobs").where(filter=firestore.FieldFilter("published", "==", False)).limit(3)
+        jobs = [doc.to_dict() for doc in jobs_query.stream()]
 
         if not jobs:
             print("✅ No hay trabajos nuevos")
